@@ -41,6 +41,10 @@ The mpview application can be invoked by simplying typing "mpview -input_house h
       cd scans/17DRP5sb8fy (or any other house)
       mpview -input_mesh region_segmentations/region0.ply -input_segments region_segmentations/region0.fsegs.json -input_objects region_segmentations/region0.semseg.json -input_categories ../../metadata/category_mapping.tsv -v
 
+    Example usage for generating region segmentation maps:
+
+      mpview -input_house house_segmentations/1LXtFkjw3qL.house -input_mesh house_segmentations/1LXtFkjw3qL.ply -input_segments house_segmentations/1LXtFkjw3qL.fsegs.json -input_objects house_segmentations/1LXtFkjw3qL.semseg.json -window 1280 1024 -output_image my_segmentation_maps -v
+
 
 ## Command interface
 

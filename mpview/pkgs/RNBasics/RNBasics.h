@@ -3,7 +3,10 @@
 #ifndef __RN__BASICS__H__
 #define __RN__BASICS__H__
 
-
+#ifndef _WIN32
+  #define strncpy_s strncpy
+  #define _strdup strdup
+#endif
 
 /* Compatability switch include files */
 

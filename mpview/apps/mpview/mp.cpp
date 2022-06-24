@@ -2185,7 +2185,11 @@ ReadFile(const char *filename)
   // Check file type
   char file_type[1024];
   FILE *fp;
-  fopen_s(&fp,filename, "r");
+  #ifndef _WIN32
+    fp = fopen(filename, "r");
+  #else
+    fopen_s(&fp,filename, "r");
+  #endif
   if (!fp) { fprintf(stderr, "Unable to open %s\n", filename); return 0; }
   fscanf_s(fp, "%s", file_type);
   fclose(fp);
@@ -2217,8 +2221,12 @@ int MPHouse::
 ReadAsciiFile(const char *filename)
 {
   // Open file
-	FILE *fp;
-	fopen_s(&fp, filename, "r");
+  FILE *fp;
+  #ifndef _WIN32
+    fp = fopen(filename, "r");
+  #else
+    fopen_s(&fp,filename, "r");
+  #endif
   if (!fp) {
     fprintf(stderr, "Unable to open house file %s\n", filename);
     return 0;
@@ -2234,7 +2242,7 @@ ReadAsciiFile(const char *filename)
   R3Box box;
 
   // Read file type and version
-  fscanf_s(fp, "%s%s", cmd, 1024, version, 1024);
+  fscanf_s(fp, "%s%s", cmd _FSCANF_SZ, version _FSCANF_SZ);
   if (strcmp(cmd, "ASCII")) {
     fprintf(stderr, "Unable to read ascii file %s, wrong type: %s\n", filename, cmd);
     return 0;
@@ -2246,9 +2254,9 @@ ReadAsciiFile(const char *filename)
     nobjects = 0;
     ncategories = 0;
     nportals = 0;
-    fscanf_s(fp, "%s", cmd,1024);
-    fscanf_s(fp, "%s", name_buffer, 1024);
-    fscanf_s(fp, "%s", label_buffer, 1024);
+    fscanf_s(fp, "%s", cmd _FSCANF_SZ);
+    fscanf_s(fp, "%s", name_buffer _FSCANF_SZ);
+    fscanf_s(fp, "%s", label_buffer _FSCANF_SZ);
     fscanf_s(fp, "%d", &nimages);
     fscanf_s(fp, "%d", &npanoramas);
     fscanf_s(fp, "%d", &nvertices);
@@ -2259,9 +2267,9 @@ ReadAsciiFile(const char *filename)
     for (int i = 0; i < 8; i++) fscanf_s(fp, "%d", &dummy);
   }
   else {
-    fscanf_s(fp, "%s", cmd, 1024);
-    fscanf_s(fp, "%s", name_buffer, 1024);
-    fscanf_s(fp, "%s", label_buffer, 1024);
+    fscanf_s(fp, "%s", cmd _FSCANF_SZ);
+    fscanf_s(fp, "%s", name_buffer _FSCANF_SZ);
+    fscanf_s(fp, "%s", label_buffer _FSCANF_SZ);
     fscanf_s(fp, "%d", &nimages);
     fscanf_s(fp, "%d", &npanoramas);
     fscanf_s(fp, "%d", &nvertices);
@@ -2284,10 +2292,10 @@ ReadAsciiFile(const char *filename)
 
   // Read levels
   for (int i = 0; i < nlevels; i++) {
-    fscanf_s(fp, "%s", cmd, 1024);
+    fscanf_s(fp, "%s", cmd _FSCANF_SZ);
     fscanf_s(fp, "%d", &house_index);
     fscanf_s(fp, "%d", &dummy);
-    fscanf_s(fp, "%s", label_buffer, 1024);
+    fscanf_s(fp, "%s", label_buffer _FSCANF_SZ);
     fscanf_s(fp, "%lf%lf%lf", &position[0], &position[1], &position[2]);
     fscanf_s(fp, "%lf%lf%lf%lf%lf%lf", &box[0][0], &box[0][1], &box[0][2], &box[1][0], &box[1][1], &box[1][2]);
     for (int j = 0; j < 5; j++) fscanf_s(fp, "%d", &dummy);
@@ -2301,11 +2309,11 @@ ReadAsciiFile(const char *filename)
     
   // Read regions
   for (int i = 0; i < nregions; i++) {
-    fscanf_s(fp, "%s", cmd, 1024);
+    fscanf_s(fp, "%s", cmd _FSCANF_SZ);
     fscanf_s(fp, "%d", &house_index);
     fscanf_s(fp, "%d", &level_index);
     fscanf_s(fp, "%d%d", &dummy, &dummy);
-    fscanf_s(fp, "%s", label_buffer, 1024);
+    fscanf_s(fp, "%s", label_buffer _FSCANF_SZ);
     fscanf_s(fp, "%lf%lf%lf", &position[0], &position[1], &position[2]);
     fscanf_s(fp, "%lf%lf%lf%lf%lf%lf", &box[0][0], &box[0][1], &box[0][2], &box[1][0], &box[1][1], &box[1][2]);
     fscanf_s(fp, "%lf", &height);
@@ -2327,11 +2335,11 @@ ReadAsciiFile(const char *filename)
   for (int i = 0; i < nportals; i++) {
     int region0_index, region1_index;
     R3Point p0, p1;
-    fscanf_s(fp, "%s", cmd, 1024);
+    fscanf_s(fp, "%s", cmd _FSCANF_SZ);
     fscanf_s(fp, "%d", &house_index);
     fscanf_s(fp, "%d", &region0_index);
     fscanf_s(fp, "%d", &region1_index);
-    fscanf_s(fp, "%s", label_buffer, 1024);
+    fscanf_s(fp, "%s", label_buffer _FSCANF_SZ);
     fscanf_s(fp, "%lf%lf%lf", &p0[0], &p0[1], &p0[2]);
     fscanf_s(fp, "%lf%lf%lf", &p1[0], &p1[1], &p1[2]);
     for (int j = 0; j < 4; j++) fscanf_s(fp, "%d", &dummy);
@@ -2352,11 +2360,11 @@ ReadAsciiFile(const char *filename)
     
   // Read surfaces
   for (int i = 0; i < nsurfaces; i++) {
-    fscanf_s(fp, "%s", cmd, 1024);
+    fscanf_s(fp, "%s", cmd _FSCANF_SZ);
     fscanf_s(fp, "%d", &house_index);
     fscanf_s(fp, "%d", &region_index);
     fscanf_s(fp, "%d", &dummy);
-    fscanf_s(fp, "%s", label_buffer, 1024);
+    fscanf_s(fp, "%s", label_buffer _FSCANF_SZ);
     fscanf_s(fp, "%lf%lf%lf", &position[0], &position[1], &position[2]);
     fscanf_s(fp, "%lf%lf%lf", &normal[0], &normal[1], &normal[2]);
     fscanf_s(fp, "%lf%lf%lf%lf%lf%lf", &box[0][0], &box[0][1], &box[0][2], &box[1][0], &box[1][1], &box[1][2]);
@@ -2376,10 +2384,10 @@ ReadAsciiFile(const char *filename)
     
   // Read vertices
   for (int i = 0; i < nvertices; i++) {
-    fscanf_s(fp, "%s", cmd, 1024);
+    fscanf_s(fp, "%s", cmd _FSCANF_SZ);
     fscanf_s(fp, "%d", &house_index);
     fscanf_s(fp, "%d", &surface_index);
-    fscanf_s(fp, "%s", label_buffer, 1024);
+    fscanf_s(fp, "%s", label_buffer _FSCANF_SZ);
     fscanf_s(fp, "%lf%lf%lf", &position[0], &position[1], &position[2]);
     fscanf_s(fp, "%lf%lf%lf", &normal[0], &normal[1], &normal[2]);
     for (int j = 0; j < 3; j++) fscanf_s(fp, "%d", &dummy);
@@ -2397,8 +2405,8 @@ ReadAsciiFile(const char *filename)
 
   // Read panoramas
   for (int i = 0; i < npanoramas; i++) {
-    fscanf_s(fp, "%s", cmd, 1024);
-    fscanf_s(fp, "%s", name_buffer, 1024);
+    fscanf_s(fp, "%s", cmd _FSCANF_SZ);
+    fscanf_s(fp, "%s", name_buffer _FSCANF_SZ);
     fscanf_s(fp, "%d", &house_index);
     fscanf_s(fp, "%d", &region_index);
     fscanf_s(fp, "%d", &dummy);
@@ -2421,10 +2429,10 @@ ReadAsciiFile(const char *filename)
     double extrinsics[16];
     int camera_index, yaw_index, width, height;
     char depth_filename[1024], color_filename[1024];
-    fscanf_s(fp, "%s", cmd, 1024);
+    fscanf_s(fp, "%s", cmd _FSCANF_SZ);
     fscanf_s(fp, "%d", &house_index);
     fscanf_s(fp, "%d", &panorama_index);
-    fscanf_s(fp, "%s", name_buffer, 1024);
+    fscanf_s(fp, "%s", name_buffer _FSCANF_SZ);
     fscanf_s(fp, "%d", &camera_index);
     fscanf_s(fp, "%d", &yaw_index);
     for (int j = 0; j < 16; j++) fscanf_s(fp, "%lf", &extrinsics[j]);
@@ -2461,10 +2469,10 @@ ReadAsciiFile(const char *filename)
   for (int i = 0; i < ncategories; i++) {
     int label_id, mpcat40_id;
     char label_name[1024], mpcat40_name[1024];
-    fscanf_s(fp, "%s", cmd, 1024);
+    fscanf_s(fp, "%s", cmd _FSCANF_SZ);
     fscanf_s(fp, "%d", &house_index);
-    fscanf_s(fp, "%d %s", &label_id, label_name, 1024);
-    fscanf_s(fp, "%d %s", &mpcat40_id, mpcat40_name, 1024);
+    fscanf_s(fp, "%d %s", &label_id, label_name _FSCANF_SZ);
+    fscanf_s(fp, "%d %s", &mpcat40_id, mpcat40_name _FSCANF_SZ);
     for (int j = 0; j < 5; j++) fscanf_s(fp, "%d", &dummy);
     if (strcmp(cmd, "C")) { fprintf(stderr, "Error reading category %d\n", i); return 0; }
     char *label_namep = label_name; while (*label_namep) { if (*label_namep == '#') *label_namep = ' '; label_namep++; }
@@ -2480,7 +2488,7 @@ ReadAsciiFile(const char *filename)
   // Read objects
   for (int i = 0; i < nobjects; i++) {
     R3Vector axis0, axis1, radius;
-    fscanf_s(fp, "%s", cmd, 1024);
+    fscanf_s(fp, "%s", cmd _FSCANF_SZ);
     fscanf_s(fp, "%d", &house_index);
     fscanf_s(fp, "%d", &region_index);
     fscanf_s(fp, "%d", &category_index);
@@ -2506,7 +2514,7 @@ ReadAsciiFile(const char *filename)
     
   // Read segments
   for (int i = 0; i < nsegments; i++) {
-    fscanf_s(fp, "%s", cmd, 1024);
+    fscanf_s(fp, "%s", cmd _FSCANF_SZ);
     fscanf_s(fp, "%d", &house_index);
     fscanf_s(fp, "%d", &object_index);
     fscanf_s(fp, "%d", &id);
@@ -2540,8 +2548,12 @@ int MPHouse::
 WriteAsciiFile(const char *filename) const
 {
   // Open file
-	FILE *fp;
-	fopen_s(&fp,filename, "w");
+  FILE *fp;
+  #ifndef _WIN32
+    fp = fopen(filename, "r");
+  #else
+    fopen_s(&fp,filename, "r");
+  #endif
   if (!fp) {
     fprintf(stderr, "Unable to open house file %s\n", filename);
     return 0;
@@ -2674,8 +2686,8 @@ WriteAsciiFile(const char *filename) const
   for (int i = 0; i < categories.NEntries(); i++) {
     MPCategory *category = categories.Kth(i);
     char label_name[1024], mpcat40_name[1024];
-    strncpy_s(label_name, (category->label_name) ? category->label_name : "-", 1024);
-    strncpy_s(mpcat40_name, (category->mpcat40_name) ? category->mpcat40_name : "-", 1024);
+    strncpy_s(label_name, (category->label_name) ? category->label_name : "-" , 1024);
+    strncpy_s(mpcat40_name, (category->mpcat40_name) ? category->mpcat40_name : "-" , 1024);
     char *label_namep = label_name; while (*label_namep) { if (*label_namep == ' ') *label_namep = '#'; label_namep++; }
     char *mpcat40_namep = mpcat40_name; while (*mpcat40_namep) { if (*mpcat40_namep == ' ') *mpcat40_namep = '#'; mpcat40_namep++; }
     fprintf(fp, "C  ");
@@ -2811,8 +2823,12 @@ int MPHouse::
 ReadCategoryFile(const char *filename)
 {
   // Open file
-	FILE* fp;
-	fopen_s(&fp,filename, "r");
+  FILE* fp;
+  #ifndef _WIN32
+    fp = fopen(filename, "r");
+  #else
+    fopen_s(&fp,filename, "r");
+  #endif
   if (!fp) {
     fprintf(stderr, "Unable to open category file %s\n", filename);
     return 0;
@@ -2894,7 +2910,11 @@ ReadSegmentFile(const char *filename)
 
   // Open file
   FILE* fp;
-  fopen_s(&fp, filename, "rb");
+  #ifndef _WIN32
+    fp = fopen(filename, "rb");
+  #else
+    fopen_s(&fp,filename, "rb");
+  #endif
   if (!fp) {
     fprintf(stderr, "Unable to open json file %s\n", filename);
     return 0;
@@ -2964,7 +2984,11 @@ ReadObjectFile(const char *filename)
 {
   // Open file
   FILE* fp;
-  fopen_s(&fp,filename, "rb");
+  #ifndef _WIN32
+    fp = fopen(filename, "rb");
+  #else
+    fopen_s(&fp,filename, "rb");
+  #endif  
   if (!fp) {
     fprintf(stderr, "Unable to open json file %s\n", filename);
     return 0;

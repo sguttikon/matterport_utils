@@ -10,7 +10,16 @@
 
 #define MP_DEFAULT_DRAW_FLAGS 0xFFFFFFFF
 
-
+#ifndef _WIN32
+  #define strncpy_s strncpy
+  #define sprintf_s sprintf
+  #define fscanf_s fscanf
+  #define _strdup strdup
+  #define __stdcall 
+  #define _FSCANF_SZ
+#else
+  #define _FSCANF_SZ , 1024
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 

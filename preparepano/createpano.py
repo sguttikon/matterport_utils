@@ -110,7 +110,7 @@ def combine_views(
                 pano = pano + sphere_img 
 
             else:
-                pano[sphere_img>0] = sphere_img[sphere_img>0] 
+                pano[np.any(sphere_img>0,axis=2)] = sphere_img[np.any(sphere_img>0,axis=2)] 
         pano_w[:,:,0] = pano_w[:,:,0] + validMap
         if nchannels>1:
             pano_w[:,:,1] = pano_w[:,:,1] + validMap

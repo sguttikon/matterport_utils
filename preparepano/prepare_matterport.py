@@ -17,17 +17,14 @@ from PIL import Image
 # can be installed using pip install py360convert
 import py360convert 
 import zipfile
-import createpano
 import logging
 import tqdm
 import copy
 import math
 
-log = logging.getLogger(__name__)
+from preparepano import createpano
 
-def unzip(basedir,filename):
-    with zipfile.ZipFile(os.path.join(basedir, filename), 'r') as zip_ref:
-        zip_ref.extractall(basedir)
+log = logging.getLogger(__name__)
 
 def parse_camera_params(filename: str) -> dict:
     with open(filename, 'r') as f:
@@ -78,8 +75,6 @@ def correct_depth_distortion(depth_img_in):
                 if result>65535:
                     result = 65535
                 depth_img[j,i,0] = result
-
-        
     return depth_img
     
 
@@ -97,7 +92,7 @@ def process_file_type(
     face_seq = ['U','B','R','F','L','D']
     
     if not(os.path.exists(out_dir)):
-        os.mkdir(out_dir)
+        os.makedirs(out_dir)
 
     if not(os.path.exists(os.path.join(out_dir, name))):
         os.mkdir(os.path.join(out_dir, name))
@@ -177,15 +172,8 @@ def process_file_type(
                 eqrimg = Image.fromarray(eqrar.astype(np.uint8))
                 eqrimg.save(os.path.join(out_dir, name, location + ".png"))
 
-def process_scan(m3d_path, out_path, scan_id, types, unpack, warp_depth) -> None:      
-    if unpack:
-        unzip(os.path.join(m3d_path,scan_id),"undistorted_camera_parameters.zip")
-        unzip(os.path.join(m3d_path,scan_id),"house_segmentations.zip")
-        unzip(os.path.join(m3d_path,scan_id),"undistorted_color_images.zip")
-        unzip(os.path.join(m3d_path,scan_id),"undistorted_depth_images.zip")
-        unzip(os.path.join(m3d_path,scan_id),"matterport_skybox_images.zip")
-
-    equirect_path = os.path.join(out_path, scan_id)
+def process_scan(m3d_path, out_path, scan_id, types, warp_depth) -> None:
+    equirect_path = os.path.join(out_path, scan_id, 'panorama')
     for t in tqdm.tqdm(types, desc="Scan Progress"):
         args = _CHOICE_MAPPING_[t]
         process_file_type(m3d_path, scan_id, t, args[0], equirect_path, args[1], args[2], args[3], warp_depth)
@@ -195,8 +183,9 @@ _CHOICE_MAPPING_ = {
     'skybox':   ('matterport_skybox_images',    'jpg',  True,   True),
     'color':    ('undistorted_color_images',    'jpg',  False,  True),
     'depth':    ('undistorted_depth_images',    'png',  False,  True),
-    'classes':  ('segmentation_maps_classes',   'png',  False,  False),
-    'instances':('segmentation_maps_instances', 'png',  False,  False),
+    'classes':  ('segmentation_maps_classes_pretty',   'png',  False,  False),
+    'instances':('segmentation_maps_instances_pretty', 'png',  False,  False),
+    'normal':   ('undistorted_normal_images_processed',   'png',  False,  True),
 }
 
 def parse_arguments(args):
@@ -213,9 +202,12 @@ def parse_arguments(args):
     parser.add_argument("--out_width", type=int, 
         default=1024, help="Output equirectangular width"
     )
+    parser.add_argument("--out_height", type=int, 
+        default=512, help="Output equirectangular height"
+    )
     parser.add_argument("--types", #type=list,
         nargs='+', default=['color'],
-        choices=['skybox', 'color', 'depth', 'classes', 'instances'],
+        choices=['skybox', 'color', 'depth', 'classes', 'instances', 'normal'],
         help="Which type of files to convert"
     )
     parser.add_argument("--warp_depth", type=bool, default=True,
@@ -224,45 +216,54 @@ def parse_arguments(args):
     parser.add_argument("--scan_id", type=str,
         help="Process single specified scan rather than getting list of all scans"
     )
+    parser.add_argument("--all_train_scans", action="store_true",
+        help="Process all scans of the train set rather than getting list of all scans"
+    )
+    parser.add_argument("--all_validation_scans", action="store_true",
+        help="Process all scans of the validation set rather than getting list of all scans"
+    )
     parser.add_argument("--all_test_scans", action="store_true",
         help="Process all scans of the test set rather than getting list of all scans"
-    )
-    parser.add_argument("--unpack", action="store_true", 
-        help="Unpack ZIP files before processing"
     )
     return parser.parse_known_args(args)
 
 if __name__ == "__main__":
     args, _ = parse_arguments(sys.argv)
-    equirect_size = [args.out_width, args.out_width // 2]
+    
+    equirect_size = [args.out_width, args.out_height]
     if not os.path.exists(args.out_path):
         os.mkdir(args.out_path)
+
     scan_id_list = []
     if not(args.scan_id==None):
         scan_id_list = tqdm.tqdm([args.scan_id], desc="Dataset Progress")
+    elif args.all_train_scans:
+        train_id_list = [
+            '17DRP5sb8fy', '1LXtFkjw3qL', '1pXnuDYAj8r', '29hnd4uzFmX', '2azQ1b91cZZ', '2n8kARJN3HM',
+            '5LpN3gDmAk7', '5ZKStnWn8Zo', '5q7pvUzZiYa', '759xd9YjKW5', '8194nk5LbLH', '82sE5b5pLXE',
+            '8WUmhLawc2A', 'ARNzJeq3xxb', 'D7N2EKCX4Sj', 'E9uDoFAP3SH', 'EDJbREhghzL', 'EU6Fwq7SyZv',
+            'JF19kD82Mey', 'JmbYfDe2QKZ', 'PX4nDJXEHrG', 'PuKPg4mmafe', 'QUCTc6BB5sX', 'SN83YJsR3w2',
+            'TbHJrupSAjP', 'ULsKaCPVFJR', 'V2XKFyX4ASd', 'VVfe2KiqLaN', 'Vt2qJdWjCF2', 'Vvot9Ly1tCj',
+            'VzqfbhrpDEA', 'WYY7iVyf5p8', 'XcA2TqTSSAj', 'YFuZgdQ5vWj', 'YVUC4YcDtcY', 'aayBHfsNo7d',
+            'ac26ZMwG7aT', 'cV4RVeZvu5T', 'fzynW3qQPVF', 'gTV8FGcVJC9', 'gxdoqLR6rwA', 'gZ6f7yhEvPG',
+            'i5noydFURQK', 'mJXqzFtmKg4', 'oLBMNvg9in8', 'p5wJjkQkbXX', 'qoiz87JEwZ2', 'r1Q1Z4BcV1o',
+            'r47D5H71a5s', 's8pcmisQ38h', 'sKLMLpTHeUy', 'sT4fr6TAbpF', 'ur6pFq6Qu1A', 'vyrNrziPKCB',
+            'Uxmj2M2itWa', 'RPmz2sHmrrY', 'Pm6F8kyY3z2', 'pLe4wQe7qrG', 'JeFG25nYj2p', 'HxpKQynjfin',
+            '7y3sRwLe3Va', '2t7WUuJeko7', 'B6ByNegPMKs', 'S9hNv5qa7GM', 'zsNo4HB9uLZ', 'kEZ7cmS4wCh'
+        ]
+    elif args.all_validation_scans:
+        validation_id_list = [
+            'UwV83HsGsw3', 'X7HyMhZNoso', 'Z6MFQCViBuw', 'b8cTxDM8gDG', 'e9zR4mvMWw7', 'q9vSo1VnCiC',
+            'rPc6DW4iMge', 'rqfALeAoiTq', 'uNb9QFRL6hY', 'wc2JMjhGNzB', 'x8F5xyUWy9e', 'yqstnuAEVhm'
+        ]
     elif args.all_test_scans:
         test_id_list = [
-                         "2t7WUuJeko7",
-                         "5ZKStnWn8Zo",
-                         "ARNzJeq3xxb",
-                         "fzynW3qQPVF",
-                         "jtcxE69GiFV",
-                         "pa4otMbVnkk",
-                         "q9vSo1VnCiC",
-                         "rqfALeAoiTq",
-                         "UwV83HsGsw3",
-                         "wc2JMjhGNzB",
-                         "WYY7iVyf5p8",
-                         "YFuZgdQ5vWj",
-                         "yqstnuAEVhm",
-                         "YVUC4YcDtcY",
-                         "gxdoqLR6rwA",
-                         "gYvKGZ5eRqb",
-                         "RPmz2sHmrrY",
-                         "Vt2qJdWjCF2"
+            'VFuaQ6m2Qom', 'VLzqgDo317F', 'ZMojNkEp431', 'jh4fc5c5qoQ', 'jtcxE69GiFV', 'pRbA3pwrgk9',
+            'pa4otMbVnkk', 'D7G3Y4RVNrH', 'dhjEzFoUFzH', 'GdvgFV5R1Z5', 'gYvKGZ5eRqb', 'YmJkqBEsHnH'
         ]
         scan_id_list = tqdm.tqdm(test_id_list, desc="Dataset Progress")
     else: 
         scan_id_list = tqdm.tqdm(os.listdir(args.m3d_path), desc="Dataset Progress")
+
     for scan_id in scan_id_list:
-        process_scan(args.m3d_path, args.out_path, scan_id, args.types, args.unpack, args.warp_depth)
+        process_scan(m3d_path=args.m3d_path, out_path=args.out_path, scan_id=scan_id, types=args.types, warp_depth=args.warp_depth)
